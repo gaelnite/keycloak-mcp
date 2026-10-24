@@ -1,0 +1,19 @@
+{
+  "policies": [
+    {
+      "name": "cimd-policy",
+      "description": "Enable CIMD for https client-id URIs on localhost",
+      "enabled": true,
+      "conditions": [
+        {
+          "condition": "client-id-uri",
+          "configuration": {
+            "client-id-uri-scheme": ["https"],
+            "client-id-uri-allow-permitted-domains": ["localhost"]
+          }
+        }
+      ],
+      "profiles": ["cimd-profile"]
+    }
+  ]
+}

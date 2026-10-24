@@ -48,3 +48,14 @@ jobs:
         run: |
           terraform -chdir=terraform init -backend=false -input=false
           terraform -chdir=terraform validate
+
+  ansible-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "ansible-core>=2.15"
+      - run: ansible-playbook -i ansible/inventory/hosts.yml --syntax-check ansible/playbooks/site.yml
+      - run: ansible-playbook -i ansible/inventory/hosts.yml --syntax-check ansible/playbooks/teardown.yml

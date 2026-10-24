@@ -8,6 +8,15 @@ This is an experimental reference project. Issues and pull requests are welcome,
   Internet-Drafts are the source of truth for protocol details; please cite a section when you change behaviour.
 - Open an issue for anything larger than a typo or a one-file fix.
 
+## Branches and pull requests
+
+Branch names use `<type>/<short-kebab-case>`, with `type` one of `feat`, `fix`, `docs`, `chore`, `refactor` or
+`test`. Examples: `feat/ansible-lifecycle`, `fix/cimd-cache-ttl`.
+
+`main` is protected. Every change lands through a pull request with one approving review, a linear history and no
+force pushes. Keep a pull request to one logical change and include the verification output when it affects the
+runtime path.
+
 ## Development
 
 ```bash

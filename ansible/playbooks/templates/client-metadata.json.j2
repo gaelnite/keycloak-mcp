@@ -1,0 +1,11 @@
+{
+  "client_id": "{{ client_id }}",
+  "client_name": "SPIFFE MCP client",
+  "client_uri": "{{ cimd_url }}/",
+  "redirect_uris": ["http://127.0.0.1:8765/callback"],
+  "grant_types": ["client_credentials"],
+  "response_types": [],
+  "token_endpoint_auth_method": "private_key_jwt",
+  "spiffe_id": "{{ trust_domain }}/workload/mcp-client",
+  "spiffe_bundle_endpoint": "{{ cimd_url }}/bundle.json"
+}

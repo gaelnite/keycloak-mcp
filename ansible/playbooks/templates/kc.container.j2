@@ -1,0 +1,27 @@
+[Unit]
+Description={{ stack_name }} Keycloak {{ keycloak_version }}
+After={{ stack_name }}-db.service network-online.target
+Requires={{ stack_name }}-db.service
+Wants=network-online.target
+
+[Container]
+Image={{ keycloak_image }}
+ContainerName={{ stack_name }}-kc
+Network=host
+Volume={{ stack_name }}-kcdata:/opt/keycloak/data:Z
+Volume={{ config_dir }}/certs:/etc/certs:ro,Z
+EnvironmentFile={{ config_dir }}/kc.env
+Environment=KC_HEALTH_ENABLED=true
+Environment=KC_METRICS_ENABLED=true
+HealthCmd=/bin/bash -c "exec 3<>/dev/tcp/127.0.0.1/{{ kc_https_port }} && exec 4<>/dev/tcp/127.0.0.1/{{ kc_management_port }}"
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=20
+HealthStartPeriod=60s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,32 @@
+repo_dir: "{{ playbook_dir | dirname | dirname }}"
+stack_name: keycloak-mcp
+config_dir: "{{ ansible_env.HOME }}/.config/{{ stack_name }}"
+quadlet_dir: "{{ ansible_env.HOME }}/.config/containers/systemd"
+user_unit_dir: "{{ ansible_env.HOME }}/.config/systemd/user"
+state_dir: "{{ ansible_env.HOME }}/.local/state/{{ stack_name }}"
+
+keycloak_version: "26.8.1"
+keycloak_image: "localhost/{{ stack_name }}:{{ keycloak_version }}"
+
+kc_http_port: 8080
+kc_https_port: 8443
+kc_management_port: 9000
+cimd_port: 9444
+mcp_port: 8800
+db_port: 5432
+
+realm: lab
+trust_domain: "spiffe://lab.local"
+spiffe_subject: "spiffe://lab.local/workload/mcp-client"
+
+kc_url: "https://localhost:{{ kc_https_port }}"
+cimd_url: "https://localhost:{{ cimd_port }}"
+client_id: "{{ cimd_url }}/client-metadata.json"
+mcp_local_url: "http://127.0.0.1:{{ mcp_port }}"
+mcp_audience: "https://localhost:{{ mcp_port }}/mcp"
+
+force_build: false
+run_verify: true
+remove_image: false
+keep_config: false
+keep_volumes: false

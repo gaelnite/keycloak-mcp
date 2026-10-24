@@ -5,8 +5,14 @@ set -uo pipefail
 KC="${KC:-https://localhost:8443}"
 REALM="${REALM:-lab}"
 MCP="${MCP:-http://127.0.0.1:8800}"
+CIMD_URL="${CIMD_URL:-https://localhost:9444}"
+CLIENT_ID="${CLIENT_ID:-$CIMD_URL/client-metadata.json}"
+MCP_AUDIENCE="${MCP_AUDIENCE:-https://localhost:8800/mcp}"
+export CLIENT_ID MCP_AUDIENCE
 CADIR="${CADIR:-$HOME/.config/keycloak-mcp/certs}"
 LAB="${LAB:-$(cd "$(dirname "$0")/.." && pwd)}"
+OUTDIR="${OUTDIR:-$LAB/cimd}"
+SVID_FILE="${SVID_FILE:-$OUTDIR/svid.jwt}"
 CURL="curl -s --cacert $CADIR/ca.crt"
 pass=0; fail=0
 ok(){ echo "PASS  $1"; pass=$((pass+1)); }
@@ -21,22 +27,23 @@ flag=$($CURL "$KC/realms/$REALM/.well-known/openid-configuration" | python3 -c "
 [ "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:9000/metrics)" = 200 ] && ok "native metrics" || no "native metrics"
 
 # 3. CIMD document and SPIFFE bundle are served with the lab CA
-$CURL -o /tmp/v-cimd.json -w "%{http_code}" https://localhost:9444/client-metadata.json | grep -q 200 && ok "CIMD document served" || no "CIMD document"
-$CURL -o /tmp/v-bundle.json -w "%{http_code}" https://localhost:9444/bundle.json | grep -q 200 && ok "SPIFFE bundle served" || no "SPIFFE bundle"
+$CURL -o /tmp/v-cimd.json -w "%{http_code}" $CLIENT_ID | grep -q 200 && ok "CIMD document served" || no "CIMD document"
+$CURL -o /tmp/v-bundle.json -w "%{http_code}" $CIMD_URL/bundle.json | grep -q 200 && ok "SPIFFE bundle served" || no "SPIFFE bundle"
 
 # 4. Positive SVID token, then assert claims
 tok_resp=$($CURL -X POST "$KC/realms/$REALM/protocol/openid-connect/token" \
   -d grant_type=client_credentials \
-  -d "client_id=https://localhost:9444/client-metadata.json" \
+  -d "client_id=$CLIENT_ID" \
   -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-spiffe" \
-  -d "client_assertion=$(cat "$LAB/cimd/svid.jwt")")
+  -d "client_assertion=$(cat "$SVID_FILE")")
 printf '%s' "$tok_resp" > /tmp/v-tok.json
 python3 - "$KC" <<'PY' && ok "SVID -> access token with aud/azp/scope" || no "SVID token"
 import base64,json,sys
 d=json.load(open("/tmp/v-tok.json"))
 if "access_token" not in d: print(" ", d); raise SystemExit(1)
 p=d["access_token"].split(".")[1]; p+="="*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
-need={"aud":"https://localhost:8800/mcp","azp":"https://localhost:9444/client-metadata.json"}
+import os
+need={"aud":os.environ["MCP_AUDIENCE"],"azp":os.environ["CLIENT_ID"]}
 for k,v in need.items():
     got=c.get(k); got=got[0] if isinstance(got,list) and got else got
     if got!=v: print(f"  {k}={got!r} expected {v!r}"); raise SystemExit(1)
@@ -46,15 +53,15 @@ PY
 TOKEN=$(cat /tmp/v-token 2>/dev/null)
 
 # 5. Negative: a SVID minted for the wrong audience must be rejected
-python3 "$LAB/scripts/mint-svid.py" mint --trust-domain spiffe://lab.local \
+python3 "$LAB/scripts/mint-svid.py" --outdir "$OUTDIR" mint --trust-domain spiffe://lab.local \
   --subject spiffe://lab.local/workload/mcp-client --audience https://wrong.example >/dev/null 2>&1
 code=$($CURL -o /tmp/v-neg.json -w "%{http_code}" -X POST "$KC/realms/$REALM/protocol/openid-connect/token" \
-  -d grant_type=client_credentials -d "client_id=https://localhost:9444/client-metadata.json" \
+  -d grant_type=client_credentials -d "client_id=$CLIENT_ID" \
   -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-spiffe" \
-  -d "client_assertion=$(cat "$LAB/cimd/svid.jwt")")
+  -d "client_assertion=$(cat "$SVID_FILE")")
 [ "$code" = 400 ] && ok "wrong-audience SVID rejected (400)" || no "wrong-audience SVID" "(got $code)"
 # restore a good SVID
-python3 "$LAB/scripts/mint-svid.py" mint --trust-domain spiffe://lab.local \
+python3 "$LAB/scripts/mint-svid.py" --outdir "$OUTDIR" mint --trust-domain spiffe://lab.local \
   --subject spiffe://lab.local/workload/mcp-client --audience "$KC/realms/$REALM" >/dev/null 2>&1
 
 # 6. MCP surface
