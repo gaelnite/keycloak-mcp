@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Python and Cedar dependencies
+        run: |
+          pip install -r mcp/requirements.txt
+          cd mcp && npm ci --no-audit --no-fund
+      - name: Run unit tests (includes real Cedar evaluations)
+        run: python -m unittest discover -s tests -t . -v
+
+  cedar-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Cedar WASM
+        working-directory: mcp
+        run: npm ci --no-audit --no-fund
+      - name: Validate the policy bundle
+        run: echo '{"op":"validate"}' | node mcp/pdp.mjs
+      - name: Check the generated bundle matches the tool registry
+        run: python3 mcp/gen_cedar.py --check
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Format check
+        run: terraform fmt -check -recursive terraform
+      - name: Validate
+        run: |
+          terraform -chdir=terraform init -backend=false -input=false
+          terraform -chdir=terraform validate

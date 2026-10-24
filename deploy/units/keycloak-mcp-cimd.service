@@ -1,0 +1,12 @@
+[Unit]
+Description=CIMD + SPIFFE bundle endpoint (lab, HTTPS 9444)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/Dev/keycloak-mcp/cimd
+ExecStart=/usr/bin/python3 %h/Dev/keycloak-mcp/cimd/serve.py --host 127.0.0.1 --bind 127.0.0.1 --port 9444 --cert %h/.config/keycloak-mcp/certs/server.crt --key %h/.config/keycloak-mcp/certs/server.key
+Restart=always
+
+[Install]
+WantedBy=default.target

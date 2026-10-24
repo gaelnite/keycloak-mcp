@@ -1,0 +1,29 @@
+# Runtime and generated artefacts — never commit
+.venv/
+node_modules/
+.npm-cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets and generated credentials
+cimd/keys/
+cimd/svid.jwt
+cimd/bundle.json
+*.pem
+*.key
+*.csr
+certs/
+*.env
+!deploy/units/mcp.env.example
+
+# Local state
+audit.jsonl
+*.log
+.DS_Store
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/crash.log
+terraform/terraform.tfvars

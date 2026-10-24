@@ -1,0 +1,9 @@
+{
+  "name": "keycloak-mcp-cedar-pdp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cedar-policy/cedar-wasm": "4.14.0"
+  }
+}

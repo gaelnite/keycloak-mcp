@@ -1,0 +1,11 @@
+{
+  "client_id": "https://localhost:9444/client-metadata.json",
+  "client_name": "SPIFFE MCP client (lab)",
+  "client_uri": "https://localhost:9444/",
+  "redirect_uris": ["http://127.0.0.1:8765/callback"],
+  "grant_types": ["client_credentials"],
+  "response_types": [],
+  "token_endpoint_auth_method": "private_key_jwt",
+  "spiffe_id": "spiffe://lab.local/workload/mcp-client",
+  "spiffe_bundle_endpoint": "https://localhost:9444/bundle.json"
+}

@@ -1,0 +1,41 @@
+keycloak-mcp
+Copyright 2026 the keycloak-mcp contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software developed by third parties:
+
+  Keycloak (https://www.keycloak.org/)
+    Apache License 2.0
+
+  Cedar and @cedar-policy/cedar-wasm (https://github.com/cedar-policy/cedar)
+    Apache License 2.0
+
+  Model Context Protocol Python SDK (https://github.com/modelcontextprotocol/python-sdk)
+    MIT License
+
+  PyJWT (https://github.com/jpadilla/pyjwt)
+    MIT License
+
+  httpx (https://github.com/encode/httpx)
+    BSD 3-Clause License
+
+  cryptography (https://github.com/pyca/cryptography)
+    Apache License 2.0 / BSD 3-Clause License
+
+  PostgreSQL (https://www.postgresql.org/)
+    PostgreSQL License
+
+Design and prior art (no source code copied unless stated):
+
+  openclaw-cedar-policy-demo (https://github.com/windley/openclaw-cedar-policy-demo)
+    MIT License, Copyright (c) 2025 Peter Steinberger
+    The Cedar PEP/PDP integration pattern, delegation-as-data and proactive
+    policy-query ideas in this project are adapted from this demo.
+
+  Keycloak MCP servers (sshaaf/keycloak-mcp-server, @mgcrea/mcp-keycloak,
+  mrz1880/mcp-keycloak-admin) inspired the tool surface; no code was copied.
+
+The OAuth Client ID Metadata Document and OAuth SPIFFE Client Authentication
+Internet-Drafts are documents of the IETF Trust. The Keycloak extension list is
+derived from https://www.keycloak.org/extensions and each project's releases.

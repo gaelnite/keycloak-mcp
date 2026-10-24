@@ -1,0 +1,141 @@
+# Keycloak 26.8.1 + lab extensions — provider layer
+#
+# Build (rootless Podman):
+#   podman build -t localhost/kc-lab:26.8.1 -f deploy/Containerfile.providers .
+#   podman run -d --name kc-lab -p 8080:8080 -p 9000:9000 \
+#     -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=... \
+#     localhost/kc-lab:26.8.1
+#
+# Every artifact below is pinned with ADD --checksum=sha256:… (needs Podman >= 4.5).
+# Digests were computed from the actual downloads on 2026-10-23; the five
+# netzbegruenung JARs were additionally cross-checked against the publisher's
+# own .sha512 assets (all matched).
+#
+# Verdicts: extensions/EXTENSIONS.md · machine list: extensions/extensions.txt
+
+FROM quay.io/keycloak/keycloak:26.8.1
+
+# Build-time options must be pinned here because the image runs with --optimized.
+ENV KC_DB=postgres \
+    KC_HEALTH_ENABLED=true \
+    KC_METRICS_ENABLED=true
+
+# COPY/ADD into /opt/keycloak requires root during build; the official image
+# runs as uid 1000, which we restore before `kc.sh build`.
+USER root
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SAFE — built against Keycloak 26.8, shipped in the image
+# ─────────────────────────────────────────────────────────────────────────────
+
+# netzbegruenung MFA plugin bundle — releases track the Keycloak version:
+# this tag IS v26.8.0-1, i.e. compiled against Keycloak 26.8.0.
+# Shaded JARs (use these, not the `original-*` assets).
+# Test: Authentication → Flows, add an "App Authenticator"/"Email"/"SMS"/
+#       "Trusted Device" execution; and/or add the "Enforce MFA" execution.
+ADD --checksum=sha256:0730d547b7754d48d390798ecf38c37007eb893a828ac30e445e9759a45ac449 \
+    https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.enforce-mfa-v26.8.0-1.jar \
+    /opt/keycloak/providers/
+ADD --checksum=sha256:69e34c8fba8aed037f6ca147e48827a9869ed888533cc723ad2581061d7d711d \
+    https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.email-authenticator-v26.8.0-1.jar \
+    /opt/keycloak/providers/
+ADD --checksum=sha256:e2aeffa178de033d1648bfd8902ade194dbe37a519526fdc31eae704cba4d225 \
+    https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.trusted-device-authenticator-v26.8.0-1.jar \
+    /opt/keycloak/providers/
+ADD --checksum=sha256:ca8a25fc62055a7b0ae8e39e8942eb897187bb71f0d6aab3a47f9538c818ea55 \
+    https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.app-authenticator-v26.8.0-1.jar \
+    /opt/keycloak/providers/
+ADD --checksum=sha256:0c94cfb7b747b5b909f62f655e5ff482a05d77bd128265bf228b787e588c9475 \
+    https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.sms-authenticator-v26.8.0-1.jar \
+    /opt/keycloak/providers/
+
+# p2-inc magic-link 0.93 — pom keycloak.version = 26.8.0; also the only one of
+# the three p2-inc JARs with NO compile-scope dependencies.
+# Test: Authentication → Flows; add "Magic Link" / "Email OTP" executions.
+ADD --checksum=sha256:ba6340762131b3b4ecb385a68a36ed3d3f983975c62d107af1fee14e650994f0 \
+    https://repo1.maven.org/maven2/io/phasetwo/keycloak/keycloak-magic-link/0.93/keycloak-magic-link-0.93.jar \
+    /opt/keycloak/providers/
+
+# p2-inc keycloak-orgs 0.192 is NOT shipped by default.
+# Its component JAR expects keycloak-scim-server classes (provided scope) and
+# breaks /admin/serverinfo with NoClassDefFoundError when they are absent,
+# which also breaks Terraform and other admin tooling. Keycloak 26.x has
+# native Organizations; use those instead.
+# To try the extension, add keycloak-orgs, dnsjava and keycloak-scim-server to
+# /opt/keycloak/providers and rebuild; verify /admin/serverinfo returns 200.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LIKELY — commented out. Uncomment ONE at a time, rebuild, and smoke-test.
+# All of these declare 26.x but their released artifact predates 26.8.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# p2-inc keycloak-events 0.66 (pom = 26.8.0, so API-compatible) — but it needs a
+# runtime dependency: com.github.xgp:kitchen-sink. Shipped commented so a first
+# build stays green; enable the pair together.
+# Test: POST a webhook via /realms/{realm}/webhooks, or set Realm settings →
+#       Events → Event listeners and confirm the provider appears in the list.
+#ADD --checksum=sha256:09427ed7928b94ed1474c9e5a678d8a9dedb3284ff3a6b456df2fa0b5b1e16a3 \
+#    https://repo1.maven.org/maven2/io/phasetwo/keycloak/keycloak-events/0.66/keycloak-events-0.66.jar \
+#    /opt/keycloak/providers/
+#ADD --checksum=sha256:c57e7f6f7234199f09d412558b3e05636f08faa7668343c4ad0f9a8ab600e7ee \
+#    https://repo1.maven.org/maven2/com/github/xgp/kitchen-sink/0.1/kitchen-sink-0.1.jar \
+#    /opt/keycloak/providers/
+
+# sventorben restrict-client-auth 26.1.1 — README badge on main says 26.8.0,
+# but the newest release is 2026-07-19 (pre-26.8). Publishes a bom.json + SHA256SUMS.
+# Test: Client → Advanced → "Restrict access to users/roles" appears; then log in.
+#ADD --checksum=sha256:<pin-me> \
+#    https://github.com/sventorben/keycloak-restrict-client-auth/releases/download/v26.1.1/keycloak-restrict-client-auth.jar \
+#    /opt/keycloak/providers/
+
+# sventorben home-idp-discovery 26.2.2 — same situation as above.
+# Test: Authentication → Flows, add "Home IdP Discovery" execution; check login redirect.
+#ADD --checksum=sha256:<pin-me> \
+#    https://github.com/sventorben/keycloak-home-idp-discovery/releases/download/v26.2.2/keycloak-home-idp-discovery.jar \
+#    /opt/keycloak/providers/
+
+# MLukman PII Data Encryption 2.7 (built against 26.3) — RISKY side of LIKELY:
+# it encrypts column values, so a bad build can leave unreadable data. Use a
+# throwaway realm only.
+# Test: set a user attribute, read the DB column directly, confirm ciphertext.
+#ADD --checksum=sha256:<pin-me> \
+#    https://github.com/MLukman/Keycloak-PII-Data-Encryption-Provider/releases/download/v2.7/keycloak-pii-data-encryption.jar \
+#    /opt/keycloak/providers/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NOT IN THIS IMAGE — external tools, deliberately not baked into the runtime
+# ─────────────────────────────────────────────────────────────────────────────
+# keycloak-config-cli 6.5.1 (config-as-code): run as a sidecar/one-shot container.
+#   No 26.8 JAR exists yet — newest per-KC asset is keycloak-config-cli-26.5.5.jar,
+#   and the project's policy is "latest 4 Keycloak releases".
+#   podman run --rm -e KEYCLOAK_URL=http://host.containers.internal:8080 \
+#     -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=... \
+#     -v $PWD/realms:/config:Z docker.io/adorsys/keycloak-config-cli:latest
+#   (Docker Hub tags follow <cli>-<kc>, e.g. 6.5.1-21.1.2 — pick a 26.x tag.)
+#
+# kcwarden 0.18.1 (config auditor): external CLI, never touches the runtime.
+#   pip install kcwarden==0.18.1 && kcwarden --help   # audit an exported realm JSON
+#
+# Metrics: do NOT add keycloak-metrics-spi (last release 2024-11-07). Keycloak
+#   26.x has native metrics — start with --metrics-enabled and scrape
+#   http://127.0.0.1:9000/metrics (management port).
+#
+# RISKY, intentionally omitted: keycloak-metrics-spi 7.0.0 (2024-11),
+#   event-listener-rabbitmq 3.0.5 (2024-03), openfga-event-publisher 1.1.1
+#   (2024-06), Nordix vault provider (no published binary).
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Augmentation build — required after adding provider JARs.
+# ─────────────────────────────────────────────────────────────────────────────
+RUN chown -R 1000:0 /opt/keycloak/providers && chmod -R g+rwX /opt/keycloak/providers
+USER 1000
+# Features are baked in at build time so runtime can use --optimized.
+# cimd = experimental (CIMD), spiffe = preview (SPIFFE client auth provider).
+RUN /opt/keycloak/bin/kc.sh build --features=cimd,spiffe --metrics-enabled=true
+
+# Healthcheck hits the management port (separate from 8080).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=5 \
+  CMD ["/bin/bash","-c","exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q '200'"]
+
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+CMD ["start", "--optimized", "--http-enabled=true", "--hostname-strict=false", "--metrics-enabled=true"]

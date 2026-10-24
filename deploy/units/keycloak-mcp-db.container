@@ -1,0 +1,22 @@
+[Unit]
+Description=Keycloak MCP reference PostgreSQL 16
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/postgres:16-alpine
+ContainerName=keycloak-mcp-db
+Network=keycloak-mcp.network
+Volume=keycloak-mcp-dbdata:/var/lib/postgresql/data:Z
+EnvironmentFile=%h/.config/keycloak-mcp/db.env
+PublishPort=127.0.0.1:5432:5432
+HealthCmd=pg_isready -U keycloak -d keycloak
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=10
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,29 @@
+# <name>|<repo>|<version>|<asset-url>|<medium>|<verdict>
+# Keycloak 26.8.1 lab shortlist — audit 2026-10-23. medium: provider-jar | provider-jar+deps | external-container | external-cli | pypi | none
+# SAFE = artifact published against 26.8. LIKELY = declares 26.x/26.8-on-main but release predates 26.8. RISKY = stale, no version claim.
+
+keycloak-orgs|p2-inc/keycloak-orgs|0.192|https://repo1.maven.org/maven2/io/phasetwo/keycloak/keycloak-orgs/0.192/keycloak-orgs-0.192.jar|provider-jar+deps|OPTIONAL-NOT-SHIPPED
+keycloak-magic-link|p2-inc/keycloak-magic-link|0.93|https://repo1.maven.org/maven2/io/phasetwo/keycloak/keycloak-magic-link/0.93/keycloak-magic-link-0.93.jar|provider-jar|SAFE
+keycloak-events|p2-inc/keycloak-events|0.66|https://repo1.maven.org/maven2/io/phasetwo/keycloak/keycloak-events/0.66/keycloak-events-0.66.jar|provider-jar+deps|SAFE
+netzbegruenung-enforce-mfa|netzbegruenung/keycloak-mfa-plugins|26.8.0-1|https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.enforce-mfa-v26.8.0-1.jar|provider-jar|SAFE
+netzbegruenung-email-authenticator|netzbegruenung/keycloak-mfa-plugins|26.8.0-1|https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.email-authenticator-v26.8.0-1.jar|provider-jar|SAFE
+netzbegruenung-app-authenticator|netzbegruenung/keycloak-mfa-plugins|26.8.0-1|https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.app-authenticator-v26.8.0-1.jar|provider-jar|SAFE
+netzbegruenung-sms-authenticator|netzbegruenung/keycloak-mfa-plugins|26.8.0-1|https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.sms-authenticator-v26.8.0-1.jar|provider-jar|SAFE
+netzbegruenung-trusted-device|netzbegruenung/keycloak-mfa-plugins|26.8.0-1|https://github.com/netzbegruenung/keycloak-mfa-plugins/releases/download/v26.8.0-1/netzbegruenung.trusted-device-authenticator-v26.8.0-1.jar|provider-jar|SAFE
+dnsjava|dnsjava/dnsjava|3.6.5|https://repo1.maven.org/maven2/dnsjava/dnsjava/3.6.5/dnsjava-3.6.5.jar|dep-of-keycloak-orgs|OPTIONAL-NOT-SHIPPED
+kitchen-sink|com.github.xgp/kitchen-sink|0.1|https://repo1.maven.org/maven2/com/github/xgp/kitchen-sink/0.1/kitchen-sink-0.1.jar|dep-of-keycloak-events|SAFE
+kcwarden|iteratec/kcwarden|0.18.1|https://pypi.org/project/kcwarden/0.18.1/|pypi|SAFE
+keycloak-config-cli|adorsys/keycloak-config-cli|6.5.1|https://github.com/adorsys/keycloak-config-cli/releases/download/v6.5.1/keycloak-config-cli-26.5.5.jar|external-container|LIKELY
+keycloak-restrict-client-auth|sventorben/keycloak-restrict-client-auth|26.1.1|https://github.com/sventorben/keycloak-restrict-client-auth/releases/download/v26.1.1/keycloak-restrict-client-auth.jar|provider-jar|LIKELY
+keycloak-home-idp-discovery|sventorben/keycloak-home-idp-discovery|26.2.2|https://github.com/sventorben/keycloak-home-idp-discovery/releases/download/v26.2.2/keycloak-home-idp-discovery.jar|provider-jar|LIKELY
+keycloak-pii-encryption|MLukman/Keycloak-PII-Data-Encryption-Provider|2.7|https://github.com/MLukman/Keycloak-PII-Data-Encryption-Provider/releases/download/v2.7/keycloak-pii-data-encryption.jar|provider-jar|LIKELY
+apple-identity-provider|klausbetz/apple-identity-provider-keycloak|1.17.0|https://github.com/klausbetz/apple-identity-provider-keycloak/releases/download/1.17.0/apple-identity-provider-1.17.0.jar|provider-jar|LIKELY
+keycloak-multi-tenancy|anarsultanov/keycloak-multi-tenancy|26.1.1|https://github.com/anarsultanov/keycloak-multi-tenancy/releases/download/26.1.1/keycloak-multi-tenancy-26.1.1.jar|provider-jar|LIKELY
+keycloak-metrics-spi|aerogear/keycloak-metrics-spi|7.0.0|https://github.com/aerogear/keycloak-metrics-spi/releases/download/7.0.0/keycloak-metrics-spi-7.0.0.jar|provider-jar|RISKY
+keycloak-event-listener-rabbitmq|aznamier/keycloak-event-listener-rabbitmq|3.0.5|https://github.com/aznamier/keycloak-event-listener-rabbitmq/releases/download/3.0.5/keycloak-to-rabbit-3.0.5.jar|provider-jar|RISKY
+keycloak-openfga-event-publisher|embesozzi/keycloak-openfga-event-publisher|1.1.1|https://github.com/embesozzi/keycloak-openfga-event-publisher/releases/download/1.1.1/keycloak-openfga-event-publisher.jar|provider-jar|RISKY
+keycloak-secrets-vault-provider|Nordix/keycloak-secrets-vault-provider|1.1.0|https://github.com/Nordix/keycloak-secrets-vault-provider/releases/tag/v1.1.0|none|RISKY
+# no published binary located (0 release assets; not on Maven Central) — build from source if needed
+terraform-provider-keycloak|keycloak/terraform-provider-keycloak|—|https://github.com/keycloak/terraform-provider-keycloak|none|SKIP
+testcontainers-keycloak|dasniko/testcontainers-keycloak|—|https://github.com/dasniko/testcontainers-keycloak|none|SKIP
+helm-charts-codecentric|codecentric/helm-charts|—|https://github.com/codecentric/helm-charts/tree/master/charts/keycloakx|none|SKIP

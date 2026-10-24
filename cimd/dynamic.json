@@ -1,0 +1,9 @@
+{
+  "client_id": "https://localhost:9444/dynamic.json",
+  "client_name": "Dynamic CIMD client (lab)",
+  "client_uri": "https://localhost:9444/",
+  "redirect_uris": ["http://127.0.0.1:8765/callback"],
+  "grant_types": ["authorization_code"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}

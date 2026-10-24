@@ -1,0 +1,27 @@
+[Unit]
+Description=Keycloak 26.8.1 CIMD/SPIFFE lab (host network)
+After=keycloak-mcp-db.service network-online.target
+Requires=keycloak-mcp-db.service
+Wants=network-online.target
+
+[Container]
+Image=localhost/keycloak-mcp:26.8.1
+ContainerName=keycloak-mcp-kc
+Network=host
+Volume=keycloak-mcp-kcdata:/opt/keycloak/data:Z
+Volume=%h/.config/keycloak-mcp/certs:/etc/certs:ro,Z
+EnvironmentFile=%h/.config/keycloak-mcp/kc.env
+Environment=KC_HEALTH_ENABLED=true
+Environment=KC_METRICS_ENABLED=true
+HealthCmd=/bin/bash -c "exec 3<>/dev/tcp/127.0.0.1/8443 && exec 4<>/dev/tcp/127.0.0.1/9000"
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=20
+HealthStartPeriod=60s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

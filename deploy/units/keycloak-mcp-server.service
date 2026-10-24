@@ -1,0 +1,21 @@
+[Unit]
+Description=Keycloak MCP reference server (streamable HTTP 8800, Cedar PEP)
+After=keycloak-mcp-kc.service keycloak-mcp-cimd.service
+Wants=keycloak-mcp-kc.service
+
+[Service]
+WorkingDirectory=%h/Dev/keycloak-mcp
+EnvironmentFile=%h/.config/keycloak-mcp/mcp.env
+Environment="KC_MCP_CLIENT_ENTITY_MAP={\"https://localhost:9444/client-metadata.json\":\"mcp-admin\",\"https://localhost:9444/dynamic.json\":\"mcp-claude\"}"
+ExecStart=%h/Dev/keycloak-mcp/.venv/bin/python %h/Dev/keycloak-mcp/mcp/server.py --transport http --host 127.0.0.1 --port 8800
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=default.target

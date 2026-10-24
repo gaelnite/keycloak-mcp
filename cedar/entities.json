@@ -1,0 +1,492 @@
+[
+  {
+    "uid": {
+      "type": "KeycloakMCP::Realm",
+      "id": "lab"
+    },
+    "attrs": {},
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Realm",
+      "id": "other"
+    },
+    "attrs": {},
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::User",
+      "id": "alice"
+    },
+    "attrs": {
+      "subject": "alice",
+      "scopes": [
+        "keycloak.audit.read",
+        "keycloak.clients.read",
+        "keycloak.config.apply",
+        "keycloak.config.read",
+        "keycloak.events.admin.read",
+        "keycloak.events.read",
+        "keycloak.extensions.read",
+        "keycloak.groups.read",
+        "keycloak.metrics.read",
+        "keycloak.orgs.read",
+        "keycloak.realms.read",
+        "keycloak.roles.read",
+        "keycloak.users.manage",
+        "keycloak.users.read"
+      ],
+      "admin": true
+    },
+    "parents": [
+      {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "lab"
+        }
+      }
+    ]
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::User",
+      "id": "bob"
+    },
+    "attrs": {
+      "subject": "bob",
+      "scopes": [
+        "keycloak.clients.read",
+        "keycloak.events.admin.read",
+        "keycloak.events.read",
+        "keycloak.extensions.read",
+        "keycloak.groups.read",
+        "keycloak.metrics.read",
+        "keycloak.orgs.read",
+        "keycloak.realms.read",
+        "keycloak.roles.read",
+        "keycloak.users.read"
+      ],
+      "admin": false
+    },
+    "parents": [
+      {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "other"
+        }
+      }
+    ]
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Client",
+      "id": "mcp-claude"
+    },
+    "attrs": {
+      "clientId": "https://clients.example/claude.json",
+      "scopes": [
+        "keycloak.audit.read",
+        "keycloak.clients.read",
+        "keycloak.config.apply",
+        "keycloak.config.read",
+        "keycloak.events.admin.read",
+        "keycloak.events.read",
+        "keycloak.extensions.read",
+        "keycloak.groups.read",
+        "keycloak.metrics.read",
+        "keycloak.orgs.read",
+        "keycloak.realms.read",
+        "keycloak.roles.read",
+        "keycloak.users.manage",
+        "keycloak.users.read"
+      ],
+      "admin": false
+    },
+    "parents": [
+      {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "lab"
+        }
+      }
+    ]
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Client",
+      "id": "mcp-cursor"
+    },
+    "attrs": {
+      "clientId": "https://clients.example/cursor.json",
+      "scopes": [
+        "keycloak.clients.read",
+        "keycloak.events.admin.read",
+        "keycloak.events.read",
+        "keycloak.extensions.read",
+        "keycloak.groups.read",
+        "keycloak.metrics.read",
+        "keycloak.orgs.read",
+        "keycloak.realms.read",
+        "keycloak.roles.read",
+        "keycloak.users.read"
+      ],
+      "admin": false
+    },
+    "parents": [
+      {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "lab"
+        }
+      }
+    ]
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Client",
+      "id": "mcp-admin"
+    },
+    "attrs": {
+      "clientId": "https://clients.example/admin.json",
+      "scopes": [
+        "keycloak.audit.read",
+        "keycloak.clients.read",
+        "keycloak.config.apply",
+        "keycloak.config.read",
+        "keycloak.events.admin.read",
+        "keycloak.events.read",
+        "keycloak.extensions.read",
+        "keycloak.groups.read",
+        "keycloak.metrics.read",
+        "keycloak.orgs.read",
+        "keycloak.realms.read",
+        "keycloak.roles.read",
+        "keycloak.users.manage",
+        "keycloak.users.read"
+      ],
+      "admin": true
+    },
+    "parents": [
+      {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "lab"
+        }
+      }
+    ]
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_realms"
+    },
+    "attrs": {
+      "name": "list_realms",
+      "requiredScope": "keycloak.realms.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "get_realm"
+    },
+    "attrs": {
+      "name": "get_realm",
+      "requiredScope": "keycloak.realms.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_clients"
+    },
+    "attrs": {
+      "name": "list_clients",
+      "requiredScope": "keycloak.clients.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "get_client"
+    },
+    "attrs": {
+      "name": "get_client",
+      "requiredScope": "keycloak.clients.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_users"
+    },
+    "attrs": {
+      "name": "list_users",
+      "requiredScope": "keycloak.users.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "get_user"
+    },
+    "attrs": {
+      "name": "get_user",
+      "requiredScope": "keycloak.users.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_groups"
+    },
+    "attrs": {
+      "name": "list_groups",
+      "requiredScope": "keycloak.groups.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_roles"
+    },
+    "attrs": {
+      "name": "list_roles",
+      "requiredScope": "keycloak.roles.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_events"
+    },
+    "attrs": {
+      "name": "list_events",
+      "requiredScope": "keycloak.events.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_admin_events"
+    },
+    "attrs": {
+      "name": "list_admin_events",
+      "requiredScope": "keycloak.events.admin.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "metrics_health_summary"
+    },
+    "attrs": {
+      "name": "metrics_health_summary",
+      "requiredScope": "keycloak.metrics.read",
+      "tier": "read",
+      "extension": "metrics",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "get_extension_inventory"
+    },
+    "attrs": {
+      "name": "get_extension_inventory",
+      "requiredScope": "keycloak.extensions.read",
+      "tier": "read",
+      "extension": "core",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "list_organizations"
+    },
+    "attrs": {
+      "name": "list_organizations",
+      "requiredScope": "keycloak.orgs.read",
+      "tier": "read",
+      "extension": "orgs",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "get_organization"
+    },
+    "attrs": {
+      "name": "get_organization",
+      "requiredScope": "keycloak.orgs.read",
+      "tier": "read",
+      "extension": "orgs",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "get_home_idp_config"
+    },
+    "attrs": {
+      "name": "get_home_idp_config",
+      "requiredScope": "keycloak.realms.read",
+      "tier": "read",
+      "extension": "home-idp",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "inspect_restrict_client_auth_flow"
+    },
+    "attrs": {
+      "name": "inspect_restrict_client_auth_flow",
+      "requiredScope": "keycloak.clients.read",
+      "tier": "read",
+      "extension": "restrict-client-auth",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "config_cli_diff"
+    },
+    "attrs": {
+      "name": "config_cli_diff",
+      "requiredScope": "keycloak.config.read",
+      "tier": "admin",
+      "extension": "config-cli",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "kcwarden_audit"
+    },
+    "attrs": {
+      "name": "kcwarden_audit",
+      "requiredScope": "keycloak.audit.read",
+      "tier": "admin",
+      "extension": "kcwarden",
+      "write": false
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "magic_link_create"
+    },
+    "attrs": {
+      "name": "magic_link_create",
+      "requiredScope": "keycloak.users.manage",
+      "tier": "write",
+      "extension": "magic-link",
+      "write": true
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Tool",
+      "id": "config_cli_apply"
+    },
+    "attrs": {
+      "name": "config_cli_apply",
+      "requiredScope": "keycloak.config.apply",
+      "tier": "write",
+      "extension": "config-cli",
+      "write": true
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Resource",
+      "id": "realm:lab"
+    },
+    "attrs": {
+      "kind": "realm",
+      "realm": {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "lab"
+        }
+      }
+    },
+    "parents": []
+  },
+  {
+    "uid": {
+      "type": "KeycloakMCP::Resource",
+      "id": "realm:other"
+    },
+    "attrs": {
+      "kind": "realm",
+      "realm": {
+        "__entity": {
+          "type": "KeycloakMCP::Realm",
+          "id": "other"
+        }
+      }
+    },
+    "parents": []
+  }
+]

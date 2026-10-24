@@ -1,0 +1,64 @@
+// Cedar schema for the extension-aware Keycloak MCP server.
+//
+// The PEP supplies facts: which realm the caller is bound to, which extensions are
+// installed, whether writes are enabled and whether a human approval was verified.
+// Policies never parse Keycloak URLs or tool arguments for security decisions.
+
+namespace KeycloakMCP {
+
+  entity Realm;
+
+  // A human caller (interactive or token-exchange subject).
+  entity User in [Realm] = {
+    "subject": String,
+    "scopes": Set<String>,
+    "admin": Bool,
+  };
+
+  // An MCP client/agent identified by its Keycloak client (CIMD URL or client id).
+  entity Client in [Realm] = {
+    "clientId": String,
+    "scopes": Set<String>,
+    "admin": Bool,
+  };
+
+  entity Tool = {
+    "name": String,
+    "requiredScope": String,
+    "tier": String,
+    "extension": String,
+    "write": Bool,
+  };
+
+  entity Resource = {
+    "kind": String,
+    "realm": Realm,
+  };
+
+  type AuthzContext = {
+    "resource": Resource,
+    "toolKnown": Bool,
+    "writesEnabled": Bool,
+    "extensions": Set<String>,
+    "approvalVerified": Bool,
+    "approvalTool": String,
+  };
+
+  action "Read" appliesTo {
+    principal: [User, Client],
+    resource: [Tool],
+    context: AuthzContext
+  };
+
+  action "Write" appliesTo {
+    principal: [User, Client],
+    resource: [Tool],
+    context: AuthzContext
+  };
+
+  action "Admin" appliesTo {
+    principal: [User, Client],
+    resource: [Tool],
+    context: AuthzContext
+  };
+}
