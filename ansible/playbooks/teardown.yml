@@ -1,0 +1,116 @@
+---
+- name: Tear down the Keycloak MCP reference stack
+  hosts: all
+  gather_facts: true
+
+  vars:
+    cimd_root: "{{ config_dir }}/cimd"
+
+  tasks:
+    - name: Check for generator secrets
+      ansible.builtin.stat:
+        path: "{{ config_dir }}/secrets.json"
+      register: secrets_file
+
+    - name: Read secrets
+      ansible.builtin.slurp:
+        src: "{{ config_dir }}/secrets.json"
+      register: secrets_raw
+      when: secrets_file.stat.exists
+
+    - name: Decode secrets
+      ansible.builtin.set_fact:
+        secrets: "{{ secrets_raw.content | b64decode | from_json }}"
+      when: secrets_file.stat.exists
+
+    - name: Check for Terraform state
+      ansible.builtin.stat:
+        path: "{{ repo_dir }}/terraform/terraform.tfstate"
+      register: tfstate
+
+    - name: Terraform destroy
+      ansible.builtin.command: "terraform -chdir={{ repo_dir }}/terraform destroy -auto-approve -input=false -no-color"
+      environment:
+        TF_IN_AUTOMATION: "1"
+        TF_VAR_admin_password: "{{ secrets.admin_password }}"
+        TF_VAR_keycloak_url: "{{ kc_url }}"
+        TF_VAR_realm: "{{ realm }}"
+        TF_VAR_cimd_client_id: "{{ client_id }}"
+        TF_VAR_mcp_audience: "{{ mcp_audience }}"
+        TF_VAR_spiffe_trust_domain: "{{ trust_domain }}"
+        TF_VAR_spiffe_bundle_endpoint: "{{ cimd_url }}/bundle.json"
+        TF_VAR_spiffe_subject: "{{ spiffe_subject }}"
+        TF_VAR_tls_insecure_skip_verify: "true"
+      when: tfstate.stat.exists and secrets_file.stat.exists
+      failed_when: false
+
+    - name: Stop and disable user services
+      ansible.builtin.systemd_service:
+        name: "{{ stack_name }}-{{ item }}.service"
+        state: stopped
+        enabled: false
+        scope: user
+        daemon_reload: true
+      loop:
+        - server
+        - cimd
+        - kc
+        - db
+      failed_when: false
+
+    - name: Remove containers
+      ansible.builtin.command: "podman rm -f {{ stack_name }}-kc {{ stack_name }}-db"
+      failed_when: false
+      changed_when: true
+
+    - name: Remove volumes
+      ansible.builtin.command: "podman volume rm {{ stack_name }}-kcdata {{ stack_name }}-dbdata"
+      when: not keep_volumes | bool
+      failed_when: false
+      changed_when: true
+
+    - name: Remove unit files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ quadlet_dir }}/{{ stack_name }}.network"
+        - "{{ quadlet_dir }}/{{ stack_name }}-db.container"
+        - "{{ quadlet_dir }}/{{ stack_name }}-kc.container"
+        - "{{ user_unit_dir }}/{{ stack_name }}-cimd.service"
+        - "{{ user_unit_dir }}/{{ stack_name }}-server.service"
+
+    - name: Remove configuration and state
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ config_dir }}"
+        - "{{ state_dir }}"
+      when: not keep_config | bool
+
+    - name: Remove Terraform state
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ repo_dir }}/terraform/terraform.tfstate"
+        - "{{ repo_dir }}/terraform/terraform.tfstate.backup"
+        - "{{ repo_dir }}/terraform/.terraform"
+
+    - name: Remove the image
+      ansible.builtin.command: "podman rmi {{ keycloak_image }}"
+      when: remove_image | bool
+      failed_when: false
+      changed_when: true
+
+    - name: Reload systemd after removing units
+      ansible.builtin.command: systemctl --user daemon-reload
+      changed_when: true
+
+    - name: Report
+      ansible.builtin.debug:
+        msg:
+          - "Stack {{ stack_name }} torn down."
+          - "Volumes kept: {{ keep_volumes | default(false) }}"
+          - "Configuration kept: {{ keep_config | default(false) }}"

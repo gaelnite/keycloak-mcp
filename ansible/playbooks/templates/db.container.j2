@@ -1,0 +1,22 @@
+[Unit]
+Description={{ stack_name }} PostgreSQL 16
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/postgres:16-alpine
+ContainerName={{ stack_name }}-db
+Network={{ stack_name }}.network
+Volume={{ stack_name }}-dbdata:/var/lib/postgresql/data:Z
+EnvironmentFile={{ config_dir }}/db.env
+PublishPort=127.0.0.1:{{ db_port }}:5432
+HealthCmd=pg_isready -U keycloak -d keycloak
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=10
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

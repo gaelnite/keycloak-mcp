@@ -1,7 +1,16 @@
 KEYCLOAK_URL ?= https://localhost:8443
+ANSIBLE ?= ansible-playbook
+ANSIBLE_INVENTORY ?= ansible/inventory/hosts.yml
+ANSIBLE_ARGS ?=
 REALM ?= lab
 
-.PHONY: init plan apply policies destroy
+.PHONY: up down init plan apply policies destroy
+
+up:
+	$(ANSIBLE) -i $(ANSIBLE_INVENTORY) ansible/playbooks/site.yml $(ANSIBLE_ARGS)
+
+down:
+	$(ANSIBLE) -i $(ANSIBLE_INVENTORY) ansible/playbooks/teardown.yml $(ANSIBLE_ARGS)
 
 init:
 	terraform -chdir=terraform init -input=false

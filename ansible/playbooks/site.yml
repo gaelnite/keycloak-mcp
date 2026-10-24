@@ -1,0 +1,308 @@
+---
+- name: Provision the Keycloak MCP reference stack
+  hosts: all
+  gather_facts: true
+
+  vars:
+    cimd_root: "{{ config_dir }}/cimd"
+    required_commands:
+      - podman
+      - python3
+      - node
+      - npm
+      - terraform
+
+  tasks:
+    - name: Check required commands
+      ansible.builtin.command: "command -v {{ item }}"
+      loop: "{{ required_commands }}"
+      register: command_check
+      changed_when: false
+
+    - name: Enable systemd linger if needed
+      ansible.builtin.command: "loginctl show-user {{ ansible_user_id }} --property=Linger"
+      register: linger
+      changed_when: false
+
+    - name: Enable linger
+      ansible.builtin.command: "loginctl enable-linger {{ ansible_user_id }}"
+      when: "'Linger=yes' not in linger.stdout"
+      changed_when: true
+
+    - name: Create configuration directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ config_dir }}", mode: "0711" }
+        - { path: "{{ config_dir }}/certs", mode: "0755" }
+        - { path: "{{ cimd_root }}", mode: "0700" }
+        - { path: "{{ state_dir }}", mode: "0700" }
+        - { path: "{{ quadlet_dir }}", mode: "0755" }
+        - { path: "{{ user_unit_dir }}", mode: "0755" }
+
+    - name: Check for generated secrets
+      ansible.builtin.stat:
+        path: "{{ config_dir }}/secrets.json"
+      register: secrets_file
+
+    - name: Generate secrets
+      ansible.builtin.copy:
+        dest: "{{ config_dir }}/secrets.json"
+        mode: "0600"
+        content: |
+          {
+            "db_password": "{{ lookup('password', '/dev/null length=32 chars=hexdigits') }}",
+            "admin_password": "{{ lookup('password', '/dev/null length=24 chars=hexdigits') }}"
+          }
+      when: not secrets_file.stat.exists
+
+    - name: Read secrets
+      ansible.builtin.slurp:
+        src: "{{ config_dir }}/secrets.json"
+      register: secrets_raw
+
+    - name: Decode secrets
+      ansible.builtin.set_fact:
+        secrets: "{{ secrets_raw.content | b64decode | from_json }}"
+
+    - name: Create local CA
+      ansible.builtin.command:
+        cmd: >-
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes
+          -keyout ca.key -out ca.crt -subj /CN=Keycloak-MCP-Lab
+          -addext basicConstraints=critical,CA:TRUE
+          -addext keyUsage=critical,keyCertSign,cRLSign
+        chdir: "{{ config_dir }}/certs"
+        creates: "{{ config_dir }}/certs/ca.crt"
+
+    - name: Create server key and CSR
+      ansible.builtin.command:
+        cmd: >-
+          openssl req -newkey rsa:2048 -sha256 -nodes
+          -keyout server.key -out server.csr -subj /CN=localhost
+        chdir: "{{ config_dir }}/certs"
+        creates: "{{ config_dir }}/certs/server.key"
+
+    - name: Write certificate SAN configuration
+      ansible.builtin.copy:
+        dest: "{{ config_dir }}/certs/san.cnf"
+        mode: "0644"
+        content: |
+          subjectAltName=DNS:localhost,IP:127.0.0.1
+          extendedKeyUsage=serverAuth
+          keyUsage=digitalSignature,keyEncipherment
+
+    - name: Sign server certificate
+      ansible.builtin.command:
+        cmd: >-
+          openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial
+          -days 825 -sha256 -extfile san.cnf -out server.crt
+        chdir: "{{ config_dir }}/certs"
+        creates: "{{ config_dir }}/certs/server.crt"
+
+    - name: Set certificate permissions
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ config_dir }}/certs/ca.key", mode: "0600" }
+        - { path: "{{ config_dir }}/certs/server.key", mode: "0644" }
+        - { path: "{{ config_dir }}/certs/ca.crt", mode: "0644" }
+        - { path: "{{ config_dir }}/certs/server.crt", mode: "0644" }
+
+    - name: Render service configuration
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { src: "db.env.j2", dest: "{{ config_dir }}/db.env", mode: "0600" }
+        - { src: "kc.env.j2", dest: "{{ config_dir }}/kc.env", mode: "0600" }
+        - { src: "mcp.env.j2", dest: "{{ config_dir }}/mcp.env", mode: "0600" }
+        - { src: "allowed-clients.txt.j2", dest: "{{ config_dir }}/allowed-clients.txt", mode: "0600" }
+        - { src: "client-metadata.json.j2", dest: "{{ cimd_root }}/client-metadata.json", mode: "0644" }
+        - { src: "dynamic.json.j2", dest: "{{ cimd_root }}/dynamic.json", mode: "0644" }
+
+    - name: Check whether the Keycloak image exists
+      ansible.builtin.command: "podman image exists {{ keycloak_image }}"
+      register: image_check
+      changed_when: false
+      failed_when: false
+
+    - name: Build the Keycloak image
+      ansible.builtin.command: "podman build -t {{ keycloak_image }} -f deploy/Containerfile.providers ."
+      args:
+        chdir: "{{ repo_dir }}"
+      when: image_check.rc != 0 or force_build | bool
+
+    - name: Install quadlet and service units
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - { src: "network.j2", dest: "{{ quadlet_dir }}/{{ stack_name }}.network" }
+        - { src: "db.container.j2", dest: "{{ quadlet_dir }}/{{ stack_name }}-db.container" }
+        - { src: "kc.container.j2", dest: "{{ quadlet_dir }}/{{ stack_name }}-kc.container" }
+        - { src: "cimd.service.j2", dest: "{{ user_unit_dir }}/{{ stack_name }}-cimd.service" }
+        - { src: "server.service.j2", dest: "{{ user_unit_dir }}/{{ stack_name }}-server.service" }
+
+    - name: Start PostgreSQL
+      ansible.builtin.systemd_service:
+        name: "{{ stack_name }}-db.service"
+        state: started
+        enabled: true
+        scope: user
+        daemon_reload: true
+
+    - name: Start Keycloak
+      ansible.builtin.systemd_service:
+        name: "{{ stack_name }}-kc.service"
+        state: started
+        enabled: true
+        scope: user
+
+    - name: Wait for Keycloak
+      ansible.builtin.uri:
+        url: "{{ kc_url }}/realms/master/.well-known/openid-configuration"
+        validate_certs: false
+        status_code: 200
+      register: kc_ready
+      until: kc_ready.status == 200
+      retries: 40
+      delay: 5
+
+    - name: Create the Python virtual environment
+      ansible.builtin.command: "python3 -m venv {{ repo_dir }}/.venv"
+      args:
+        creates: "{{ repo_dir }}/.venv/bin/python"
+
+    - name: Install MCP Python dependencies
+      ansible.builtin.command: "{{ repo_dir }}/.venv/bin/pip install --quiet -r {{ repo_dir }}/mcp/requirements.txt"
+      args:
+        chdir: "{{ repo_dir }}"
+      changed_when: false
+
+    - name: Install Cedar WASM dependency
+      ansible.builtin.command: "npm ci --no-audit --no-fund"
+      args:
+        chdir: "{{ repo_dir }}/mcp"
+        creates: "{{ repo_dir }}/mcp/node_modules/@cedar-policy/cedar-wasm"
+
+    - name: Terraform init
+      ansible.builtin.command: "terraform -chdir={{ repo_dir }}/terraform init -input=false -no-color"
+      environment:
+        TF_IN_AUTOMATION: "1"
+      changed_when: false
+
+    - name: Terraform apply
+      ansible.builtin.command: "terraform -chdir={{ repo_dir }}/terraform apply -auto-approve -input=false -no-color"
+      environment:
+        TF_IN_AUTOMATION: "1"
+        TF_VAR_admin_password: "{{ secrets.admin_password }}"
+        TF_VAR_keycloak_url: "{{ kc_url }}"
+        TF_VAR_realm: "{{ realm }}"
+        TF_VAR_cimd_client_id: "{{ client_id }}"
+        TF_VAR_mcp_audience: "{{ mcp_audience }}"
+        TF_VAR_spiffe_trust_domain: "{{ trust_domain }}"
+        TF_VAR_spiffe_bundle_endpoint: "{{ cimd_url }}/bundle.json"
+        TF_VAR_spiffe_subject: "{{ spiffe_subject }}"
+        TF_VAR_tls_insecure_skip_verify: "true"
+      register: terraform_apply
+      changed_when: "'0 added, 0 changed, 0 destroyed' not in terraform_apply.stdout"
+
+    - name: Obtain an admin token
+      ansible.builtin.uri:
+        url: "{{ kc_url }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          client_id: admin-cli
+          username: admin
+          password: "{{ secrets.admin_password }}"
+          grant_type: password
+        validate_certs: false
+        status_code: 200
+      register: admin_token
+      no_log: true
+
+    - name: Apply CIMD client policy profile
+      ansible.builtin.uri:
+        url: "{{ kc_url }}/admin/realms/{{ realm }}/client-policies/profiles"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ admin_token.json.access_token }}"
+        body_format: json
+        body: "{{ lookup('template', 'cimd-profile.json.j2') | from_json }}"
+        validate_certs: false
+        status_code: 204
+
+    - name: Apply CIMD client policy
+      ansible.builtin.uri:
+        url: "{{ kc_url }}/admin/realms/{{ realm }}/client-policies/policies"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ admin_token.json.access_token }}"
+        body_format: json
+        body: "{{ lookup('template', 'cimd-policy.json.j2') | from_json }}"
+        validate_certs: false
+        status_code: 204
+
+    - name: Mint the lab SVID
+      ansible.builtin.command: >-
+        python3 {{ repo_dir }}/scripts/mint-svid.py --outdir {{ cimd_root }} mint
+        --trust-domain {{ trust_domain }} --subject {{ spiffe_subject }}
+        --audience {{ kc_url }}/realms/{{ realm }}
+      args:
+        chdir: "{{ repo_dir }}"
+      changed_when: true
+
+    - name: Start the CIMD endpoint
+      ansible.builtin.systemd_service:
+        name: "{{ stack_name }}-cimd.service"
+        state: restarted
+        enabled: true
+        scope: user
+        daemon_reload: true
+
+    - name: Start the MCP server
+      ansible.builtin.systemd_service:
+        name: "{{ stack_name }}-server.service"
+        state: restarted
+        enabled: true
+        scope: user
+        daemon_reload: true
+
+    - name: Wait for the MCP server
+      ansible.builtin.uri:
+        url: "{{ mcp_local_url }}/healthz"
+        status_code: 200
+      register: mcp_ready
+      until: mcp_ready.status == 200
+      retries: 20
+      delay: 3
+
+    - name: Run end-to-end verification
+      ansible.builtin.command: "{{ repo_dir }}/scripts/verify.sh"
+      args:
+        chdir: "{{ repo_dir }}"
+      environment:
+        KC: "{{ kc_url }}"
+        REALM: "{{ realm }}"
+        MCP: "{{ mcp_local_url }}"
+        CIMD_URL: "{{ cimd_url }}"
+        CLIENT_ID: "{{ client_id }}"
+        MCP_AUDIENCE: "{{ mcp_audience }}"
+        CADIR: "{{ config_dir }}/certs"
+        OUTDIR: "{{ cimd_root }}"
+        SVID_FILE: "{{ cimd_root }}/svid.jwt"
+      register: verify_run
+      changed_when: false
+      when: run_verify | bool
+
+    - name: Show verification output
+      ansible.builtin.debug:
+        var: verify_run.stdout_lines
+      when: run_verify | bool

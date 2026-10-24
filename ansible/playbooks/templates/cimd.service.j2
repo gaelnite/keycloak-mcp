@@ -1,0 +1,14 @@
+[Unit]
+Description={{ stack_name }} CIMD and SPIFFE bundle endpoint
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory={{ repo_dir }}/cimd
+ExecStart=/usr/bin/python3 {{ repo_dir }}/cimd/serve.py --host 127.0.0.1 --bind 127.0.0.1 --port {{ cimd_port }} --root {{ cimd_root }} --cert {{ config_dir }}/certs/server.crt --key {{ config_dir }}/certs/server.key
+Restart=always
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

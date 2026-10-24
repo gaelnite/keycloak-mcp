@@ -1,0 +1,21 @@
+[Unit]
+Description={{ stack_name }} MCP server with Cedar PEP
+After={{ stack_name }}-kc.service {{ stack_name }}-cimd.service
+Wants={{ stack_name }}-kc.service
+
+[Service]
+WorkingDirectory={{ repo_dir }}
+EnvironmentFile={{ config_dir }}/mcp.env
+Environment="KC_MCP_CLIENT_ENTITY_MAP={\"{{ client_id }}\":\"mcp-admin\",\"{{ cimd_url }}/dynamic.json\":\"mcp-claude\"}"
+ExecStart={{ repo_dir }}/.venv/bin/python {{ repo_dir }}/mcp/server.py --transport http --host 127.0.0.1 --port {{ mcp_port }}
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=default.target

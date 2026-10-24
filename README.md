@@ -67,37 +67,19 @@ Compatibility details, exact artifact URLs and the "popular ≠ 26.8-ready" find
 
 ## Quick start
 
-Prerequisites: Keycloak **26.8.1**, Podman ≥ 4.5 (rootless), Python ≥ 3.11, Node ≥ 22 (Cedar WASM).
+Prerequisites: Podman 4.5+ (rootless), Python 3.11+, Node 22+, Terraform 1.6+, Ansible 2.15+. Keycloak 26.8.1 is
+built by the playbook.
 
 ```bash
 git clone https://github.com/gaelnite/keycloak-mcp.git ~/Dev/keycloak-mcp
 cd ~/Dev/keycloak-mcp
-
-# 1. Build Keycloak with the extensions baked in
-podman build -t localhost/keycloak-mcp:26.8.1 -f deploy/Containerfile.providers .
-
-# 2. Create the local CA, secrets and realm (see docs/DEPLOYMENT.md for every step)
-#    then install the quadlets:
-cp deploy/units/*.container deploy/units/*.network ~/.config/containers/systemd/
-cp deploy/units/keycloak-mcp-{cimd,server}.service ~/.config/systemd/user/
-systemctl --user daemon-reload && systemctl --user enable --now keycloak-mcp-db keycloak-mcp-kc
-
-# 3. Provision the realm, client, scopes and SPIFFE IDP with Terraform
-export TF_VAR_admin_password="$(grep KC_BOOTSTRAP_ADMIN_PASSWORD ~/.config/keycloak-mcp/kc.env | cut -d= -f2)"
-terraform -chdir=terraform init
-terraform -chdir=terraform apply
-# CIMD client policies need typed values the provider cannot express yet:
-KEYCLOAK_ADMIN_PASSWORD="$TF_VAR_admin_password" make policies
-
-# 4. Start the CIMD endpoint and the MCP server, then verify end to end
-systemctl --user enable --now keycloak-mcp-cimd keycloak-mcp-server
-./scripts/mint-svid.py init --trust-domain spiffe://lab.local
-./scripts/verify.sh
+make up      # build image, start stack, apply Terraform, mint SVID, verify
+make down    # stop and remove containers, volumes and generated configuration
 ```
 
-The reference deployment passes **12/12** end-to-end checks and **41** unit tests. Setup is documented in
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), realm provisioning in [docs/TERRAFORM.md](docs/TERRAFORM.md), and the
-verified AuthN results in [docs/AUTHN-RESULTS.md](docs/AUTHN-RESULTS.md).
+The playbook is idempotent and passes **12/12** end-to-end checks. See [docs/AUTOMATION.md](docs/AUTOMATION.md) for
+the lifecycle and alternate ports, [docs/TERRAFORM.md](docs/TERRAFORM.md) for realm provisioning, and
+[docs/AUTHN-RESULTS.md](docs/AUTHN-RESULTS.md) for the verified authentication results.
 
 ## Documentation
 
@@ -105,6 +87,7 @@ verified AuthN results in [docs/AUTHN-RESULTS.md](docs/AUTHN-RESULTS.md).
 |---|---|
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Podman, certificates, quadlets, optimized build, upgrade |
 | [docs/TERRAFORM.md](docs/TERRAFORM.md) | Realm provisioning, what Terraform manages, the client-policy gap |
+| [docs/AUTOMATION.md](docs/AUTOMATION.md) | One-command spin-up and teardown, variables and ports |
 | [docs/AUTHN.md](docs/AUTHN.md) | Keycloak 26.8 CIMD + SPIFFE configuration from source |
 | [docs/AUTHN-RESULTS.md](docs/AUTHN-RESULTS.md) | What was verified live, plus corrections to the config guide |
 | [docs/AUTHZ.md](docs/AUTHZ.md) | Cedar schema, policies, PEP/PDP contract |

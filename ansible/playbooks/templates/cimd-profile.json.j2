@@ -1,0 +1,25 @@
+{
+  "profiles": [
+    {
+      "name": "cimd-profile",
+      "description": "Fetch client metadata from a Client Identifier URL",
+      "executors": [
+        {
+          "executor": "client-id-metadata-document",
+          "configuration": {
+            "cimd-allow-http-scheme": false,
+            "cimd-allow-permitted-domains": ["localhost", "127.0.0.1"],
+            "cimd-restrict-same-domain": false,
+            "cimd-required-properties": ["client_name"],
+            "only-allow-confidential-client": false,
+            "accept-public-client-with-confidential-client-only-grant": true,
+            "cimd-resource-indicator-allow-list": ["{{ mcp_audience }}"],
+            "min-cache-time": 300,
+            "max-cache-time": 259200,
+            "upper-limit-metadata-bytes": 5000
+          }
+        }
+      ]
+    }
+  ]
+}
